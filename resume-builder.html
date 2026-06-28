@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume Builder — JobCraft AI</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --purple-dark: #0d0d1a;
+    --purple-card: #1a1a35;
+    --purple-border: #2e2e5e;
+    --purple-glow: #7c3aed;
+    --purple-light: #a78bfa;
+    --purple-bright: #c4b5fd;
+    --text-main: #f1f0ff;
+    --text-muted: #9b99c4;
+    --green: #34d399;
+    --green-dim: rgba(52,211,153,0.15);
+    --input-bg: #12122a;
+    --input-border: #2a2a50;
+    --input-focus: #7c3aed;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--purple-dark);
+    color: var(--text-main);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .orb { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; }
+  .orb-1 { width: 500px; height: 500px; background: #7c3aed; top: -150px; left: -150px; }
+  .orb-2 { width: 400px; height: 400px; background: #4f46e5; bottom: -100px; right: -100px; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center;
+    background: rgba(13,13,26,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(124,58,237,0.2);
+  }
+  .nav-logo {
+    font-size: 1.2rem; font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #c4b5fd);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    text-decoration: none;
+  }
+  .nav-back {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    color: var(--text-muted); text-decoration: none; font-size: 0.875rem;
+    transition: color 0.2s;
+  }
+  .nav-back:hover { color: var(--purple-light); }
+
+  /* Layout */
+  .page { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+  /* Header */
+  .page-header { text-align: center; margin-bottom: 3rem; }
+  .page-badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: var(--green-dim); border: 1px solid rgba(52,211,153,0.3);
+    color: var(--green); padding: 0.35rem 0.9rem; border-radius: 100px;
+    font-size: 0.8rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.04em;
+  }
+  .page-badge span { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+  .page-header h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem; }
+  .page-header h1 .g { background: linear-gradient(135deg, #a78bfa, #c4b5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .page-header p { color: var(--text-muted); font-size: 1rem; max-width: 480px; margin: 0 auto; }
+
+  /* Progress */
+  .progress-bar { display: flex; gap: 0.5rem; margin-bottom: 2.5rem; }
+  .progress-step { flex: 1; height: 3px; border-radius: 2px; background: var(--purple-border); transition: background 0.4s; }
+  .progress-step.done { background: var(--purple-glow); }
+  .progress-step.active { background: linear-gradient(90deg, var(--purple-glow), var(--purple-light)); }
+
+  /* Form sections */
+  .form-section {
+    background: var(--purple-card); border: 1px solid var(--purple-border);
+    border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem;
+  }
+  .section-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.75rem; }
+  .section-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.25); flex-shrink: 0; }
+  .section-header h2 { font-size: 1rem; font-weight: 600; }
+  .section-header .optional-tag { font-size: 0.72rem; color: var(--text-muted); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); padding: 0.2rem 0.5rem; border-radius: 6px; margin-left: auto; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-1 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (max-width: 560px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* Fields */
+  .field { display: flex; flex-direction: column; gap: 0.4rem; }
+  .field label { font-size: 0.825rem; font-weight: 500; color: var(--text-muted); }
+  .field label .req { color: #f87171; margin-left: 2px; }
+  .field input, .field textarea, .field select {
+    background: var(--input-bg); border: 1px solid var(--input-border);
+    border-radius: 10px; padding: 0.7rem 1rem; color: var(--text-main);
+    font-size: 0.9rem; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%; resize: vertical;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none; border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+  }
+  .field input::placeholder, .field textarea::placeholder { color: #4a4870; }
+  .field select option { background: #1a1a35; }
+  .field textarea { min-height: 90px; }
+  .field .hint { font-size: 0.775rem; color: #5a5880; }
+
+  /* File upload */
+  .file-upload-area {
+    border: 2px dashed var(--input-border); border-radius: 12px;
+    padding: 2rem; text-align: center; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .file-upload-area:hover, .file-upload-area.dragover {
+    border-color: var(--purple-glow); background: rgba(124,58,237,0.05);
+  }
+  .file-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .file-upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .file-upload-area p { font-size: 0.875rem; color: var(--text-muted); }
+  .file-upload-area strong { color: var(--purple-light); }
+  .file-name { margin-top: 0.75rem; font-size: 0.825rem; color: var(--green); display: none; }
+  .file-name.show { display: block; }
+
+  /* Dynamic rows */
+  .dynamic-rows { display: flex; flex-direction: column; gap: 1rem; }
+  .dynamic-row {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 1.25rem; position: relative;
+  }
+  .row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .row-number { font-size: 0.78rem; font-weight: 600; color: var(--purple-light); text-transform: uppercase; letter-spacing: 0.06em; }
+  .btn-remove {
+    background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2);
+    color: #f87171; padding: 0.3rem 0.7rem; border-radius: 6px;
+    font-size: 0.75rem; cursor: pointer; transition: background 0.2s;
+    font-family: inherit;
+  }
+  .btn-remove:hover { background: rgba(248,113,113,0.2); }
+  .btn-add {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: rgba(124,58,237,0.1); border: 1px dashed rgba(124,58,237,0.4);
+    color: var(--purple-light); padding: 0.65rem 1.25rem; border-radius: 10px;
+    font-size: 0.875rem; font-weight: 500; cursor: pointer; width: 100%;
+    justify-content: center; margin-top: 0.75rem; transition: background 0.2s, border-color 0.2s;
+    font-family: inherit;
+  }
+  .btn-add:hover { background: rgba(124,58,237,0.18); border-color: rgba(124,58,237,0.6); }
+
+  /* Skills tags */
+  .skills-input-wrap {
+    background: var(--input-bg); border: 1px solid var(--input-border);
+    border-radius: 10px; padding: 0.5rem 0.75rem;
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    min-height: 48px; cursor: text; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .skills-input-wrap:focus-within {
+    border-color: var(--input-focus); box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+  }
+  .skill-tag {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.35);
+    color: var(--purple-bright); padding: 0.25rem 0.6rem; border-radius: 6px;
+    font-size: 0.8rem; font-weight: 500;
+  }
+  .skill-tag button { background: none; border: none; cursor: pointer; color: var(--purple-light); font-size: 0.9rem; line-height: 1; padding: 0; display: flex; align-items: center; }
+  .skill-tag button:hover { color: #f87171; }
+  .skills-input {
+    flex: 1; min-width: 120px; background: none; border: none; outline: none;
+    color: var(--text-main); font-size: 0.875rem; font-family: inherit; padding: 0.2rem 0;
+  }
+  .skills-input::placeholder { color: #4a4870; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--purple-border); margin: 1.5rem 0; }
+
+  /* OR divider */
+  .or-divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; }
+  .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--purple-border); }
+  .or-divider span { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+
+  /* Submit */
+  .submit-wrap { text-align: center; margin-top: 2.5rem; }
+  .btn-submit {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: white; padding: 1rem 2.5rem; border-radius: 12px;
+    font-size: 1.05rem; font-weight: 600; border: none; cursor: pointer;
+    box-shadow: 0 0 30px rgba(124,58,237,0.4); transition: transform 0.2s, box-shadow 0.2s;
+    font-family: inherit; width: 100%; justify-content: center; max-width: 400px;
+  }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 0 45px rgba(124,58,237,0.55); }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .submit-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem; }
+
+  /* Success state */
+  .success-card {
+    display: none; background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.3);
+    border-radius: 16px; padding: 3rem 2rem; text-align: center; margin-top: 2rem;
+  }
+  .success-card.show { display: block; }
+  .success-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .success-card h3 { font-size: 1.4rem; font-weight: 700; color: var(--green); margin-bottom: 0.5rem; }
+  .success-card p { color: var(--text-muted); font-size: 0.95rem; }
+
+  /* Animations */
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-in { animation: fadeUp 0.5s ease both; }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<nav>
+  <a href="index.html" class="nav-logo">JobCraft AI</a>
+  <a href="index.html" class="nav-back">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    Back to Tools
+  </a>
+</nav>
+
+<div class="page">
+
+  <div class="page-header animate-in">
+    <div class="page-badge"><span></span> LIVE NOW</div>
+    <h1>Build Your <span class="g">Resume</span></h1>
+    <p>Fill in your details below or upload your old resume. Our AI will craft a polished, ATS-ready resume and send it to your inbox.</p>
+  </div>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-step active"></div>
+    <div class="progress-step"></div>
+    <div class="progress-step"></div>
+    <div class="progress-step"></div>
+    <div class="progress-step"></div>
+  </div>
+
+  <div id="formWrap">
+
+    <!-- Section 1: Personal Details -->
+    <div class="form-section animate-in">
+      <div class="section-header">
+        <div class="section-icon">👤</div>
+        <h2>Personal Details</h2>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" id="fullName" placeholder="Salim Arshad" required>
+        </div>
+        <div class="field">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" id="email" placeholder="you@example.com" required>
+        </div>
+        <div class="field">
+          <label>Phone Number <span class="req">*</span></label>
+          <input type="tel" id="phone" placeholder="+91 98765 43210" required>
+        </div>
+        <div class="field">
+          <label>City / Location <span class="req">*</span></label>
+          <input type="text" id="city" placeholder="Bangalore, India" required>
+        </div>
+        <div class="field">
+          <label>LinkedIn URL</label>
+          <input type="url" id="linkedin" placeholder="linkedin.com/in/yourname">
+        </div>
+        <div class="field">
+          <label>Current Job Title</label>
+          <input type="text" id="jobTitle" placeholder="Data Analyst">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Upload Old Resume -->
+    <div class="form-section animate-in">
+      <div class="section-header">
+        <div class="section-icon">📄</div>
+        <h2>Upload Old Resume</h2>
+        <span class="optional-tag">Optional</span>
+      </div>
+      <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:1.25rem;">Already have a resume? Upload it and skip the manual fields below — or do both for best results.</p>
+      <div class="file-upload-area" id="uploadArea">
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,.txt">
+        <div class="file-upload-icon">📎</div>
+        <p><strong>Click to upload</strong> or drag & drop</p>
+        <p style="margin-top:0.25rem; font-size:0.78rem;">PDF, DOC, DOCX, TXT — max 10MB</p>
+        <div class="file-name" id="fileName"></div>
+      </div>
+    </div>
+
+    <!-- Section 3: Target Role -->
+    <div class="form-section animate-in">
+      <div class="section-header">
+        <div class="section-icon">🎯</div>
+        <h2>Target Role</h2>
+      </div>
+      <div class="grid-1">
+        <div class="field">
+          <label>Job Description <span class="req">*</span></label>
+          <textarea id="jobDescription" placeholder="Paste the full job description here — the more detail the better. Our AI will tailor your resume to match it exactly." style="min-height:130px;" required></textarea>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Company Applying To <span class="req">*</span></label>
+            <input type="text" id="company" placeholder="Google, Wipro, etc." required>
+          </div>
+          <div class="field">
+            <label>Resume Theme <span class="req">*</span></label>
+            <select id="theme" required>
+              <option value="" disabled selected>Select a theme</option>
+              <option value="Professional">Professional (Classic)</option>
+              <option value="Modern">Modern (Clean)</option>
+              <option value="Creative">Creative (Bold)</option>
+              <option value="Minimal">Minimal (Simple)</option>
+              <option value="Executive">Executive (Premium)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Work Experience -->
+    <div class="form-section animate-in">
+      <div class="section-header">
+        <div class="section-icon">💼</div>
+        <h2>Work Experience</h2>
+        <span class="optional-tag">Optional if uploaded</span>
+      </div>
+      <div class="dynamic-rows" id="experienceRows"></div>
+      <button class="btn-add" onclick="addExperience()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        Add Work Experience
+      </button>
+    </div>
+
+    <!-- Section 5: Education -->
+    <div class="form-section animate-in">
+      <div class="section-header">
+        <div class="section-icon">🎓</div>
+        <h2>Education</h2>
+        <span class="optional-tag">Optional if uploaded</span>
+      </div>
+      <div class="dynamic-rows" id="educationRows"></div>
+      <button class="btn-add" onclick="addEducation()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        Add Education
+      </button>
+    </div>
+
+    <!-- Section 6: Skills -->
+    <div class="form-section animate-in">
+      <div class="section-header">
+        <div class="section-icon">⚡</div>
+        <h2>Key Skills</h2>
+        <span class="optional-tag">Optional if uploaded</span>
+      </div>
+      <div class="field">
+        <label>Type a skill and press <strong>Enter</strong> or <strong>,</strong> to add</label>
+        <div class="skills-input-wrap" id="skillsWrap" onclick="document.getElementById('skillsInput').focus()">
+          <input type="text" id="skillsInput" class="skills-input" placeholder="e.g. Python, SQL, Excel…">
+        </div>
+        <div class="hint">Tip: Add 6–12 skills relevant to the job description for best ATS results.</div>
+      </div>
+      <input type="hidden" id="skillsData">
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-wrap animate-in">
+      <button class="btn-submit" id="submitBtn" onclick="submitForm()">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Build My Resume — Free
+      </button>
+      <div class="submit-note">✉️ Your resume will be delivered to your inbox within 2–3 minutes.</div>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div class="success-card" id="successCard">
+    <div class="success-icon">🎉</div>
+    <h3>Resume on its way!</h3>
+    <p>Check your inbox in 2–3 minutes. Your AI-crafted resume is being built right now.</p>
+    <p style="margin-top:0.5rem;">Didn't get it? Check spam or <a href="mailto:support@jobcraftai.me" style="color:var(--purple-light);">contact us</a>.</p>
+  </div>
+
+</div>
+
+<script>
+// ─── WEBHOOK URL — replace with your n8n Resume Builder webhook ───────────
+const WEBHOOK_URL = 'https://vegetapi.app.n8n.cloud/webhook/7ff325e9-b695-40ba-a9c7-724a51fcdbc1';
+// ──────────────────────────────────────────────────────────────────────────
+
+// Progress tracking
+const sections = ['personal', 'upload', 'target', 'experience', 'skills'];
+function updateProgress() {
+  const steps = document.querySelectorAll('.progress-step');
+  const filled = ['fullName', 'email', 'phone', 'city'].filter(id => document.getElementById(id)?.value.trim()).length;
+  const fileOk = document.getElementById('resumeFile')?.files?.length > 0;
+  const jdOk = document.getElementById('jobDescription')?.value.trim().length > 20;
+  const expOk = document.querySelectorAll('#experienceRows .dynamic-row').length > 0;
+  const skillsOk = document.querySelectorAll('.skill-tag').length > 0;
+  const done = [filled >= 2, fileOk, jdOk, expOk, skillsOk];
+  steps.forEach((s, i) => {
+    s.classList.remove('done', 'active');
+    if (done[i]) s.classList.add('done');
+    else if (done.slice(0,i).every(Boolean)) s.classList.add('active');
+  });
+}
+document.addEventListener('input', updateProgress);
+
+// ─── FILE UPLOAD ──────────────────────────────────────────────────────────
+const resumeFile = document.getElementById('resumeFile');
+const fileNameEl = document.getElementById('fileName');
+const uploadArea = document.getElementById('uploadArea');
+
+resumeFile.addEventListener('change', () => {
+  if (resumeFile.files[0]) {
+    fileNameEl.textContent = '✅ ' + resumeFile.files[0].name;
+    fileNameEl.classList.add('show');
+    updateProgress();
+  }
+});
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault(); uploadArea.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) {
+    resumeFile.files = e.dataTransfer.files;
+    fileNameEl.textContent = '✅ ' + e.dataTransfer.files[0].name;
+    fileNameEl.classList.add('show');
+    updateProgress();
+  }
+});
+
+// ─── WORK EXPERIENCE ─────────────────────────────────────────────────────
+let expCount = 0;
+function addExperience() {
+  expCount++;
+  const wrap = document.getElementById('experienceRows');
+  const div = document.createElement('div');
+  div.className = 'dynamic-row';
+  div.id = 'exp-' + expCount;
+  div.innerHTML = `
+    <div class="row-header">
+      <span class="row-number">Experience ${expCount}</span>
+      <button class="btn-remove" onclick="removeRow('exp-${expCount}')">✕ Remove</button>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Company Name</label><input type="text" placeholder="Wipro Technologies"></div>
+      <div class="field"><label>Job Title / Role</label><input type="text" placeholder="Data Analyst"></div>
+      <div class="field"><label>Start Date</label><input type="text" placeholder="Jan 2022"></div>
+      <div class="field"><label>End Date</label><input type="text" placeholder="Present"></div>
+    </div>
+    <div class="field" style="margin-top:1rem;">
+      <label>Key Responsibilities & Achievements</label>
+      <textarea placeholder="• Managed billing reconciliation for 3 enterprise accounts&#10;• Reduced SLA breaches by 40% through process improvements&#10;• Led a team of 5 analysts"></textarea>
+      <div class="hint">Use bullet points for better formatting in the final resume.</div>
+    </div>
+  `;
+  wrap.appendChild(div);
+  updateProgress();
+}
+
+// ─── EDUCATION ───────────────────────────────────────────────────────────
+let eduCount = 0;
+function addEducation() {
+  eduCount++;
+  const wrap = document.getElementById('educationRows');
+  const div = document.createElement('div');
+  div.className = 'dynamic-row';
+  div.id = 'edu-' + eduCount;
+  div.innerHTML = `
+    <div class="row-header">
+      <span class="row-number">Education ${eduCount}</span>
+      <button class="btn-remove" onclick="removeRow('edu-${eduCount}')">✕ Remove</button>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Institution / University</label><input type="text" placeholder="Delhi University"></div>
+      <div class="field"><label>Degree / Course</label><input type="text" placeholder="B.Com (Hons)"></div>
+      <div class="field"><label>Year of Passing</label><input type="text" placeholder="2021"></div>
+      <div class="field"><label>Grade / Percentage</label><input type="text" placeholder="72% / 7.8 CGPA"></div>
+    </div>
+  `;
+  wrap.appendChild(div);
+  updateProgress();
+}
+
+function removeRow(id) {
+  document.getElementById(id)?.remove();
+  updateProgress();
+}
+
+// ─── SKILLS TAGS ─────────────────────────────────────────────────────────
+const skillsInput = document.getElementById('skillsInput');
+const skillsWrap = document.getElementById('skillsWrap');
+
+function addSkill(val) {
+  val = val.trim().replace(/,+$/, '').trim();
+  if (!val) return;
+  const existing = [...document.querySelectorAll('.skill-tag')].map(t => t.dataset.skill.toLowerCase());
+  if (existing.includes(val.toLowerCase())) return;
+  const tag = document.createElement('span');
+  tag.className = 'skill-tag';
+  tag.dataset.skill = val;
+  tag.innerHTML = `${val}<button onclick="this.parentElement.remove(); updateProgress();" title="Remove">×</button>`;
+  skillsWrap.insertBefore(tag, skillsInput);
+  skillsInput.value = '';
+  updateProgress();
+}
+
+skillsInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addSkill(skillsInput.value); }
+  if (e.key === 'Backspace' && !skillsInput.value) {
+    const tags = document.querySelectorAll('.skill-tag');
+    if (tags.length) tags[tags.length - 1].remove();
+    updateProgress();
+  }
+});
+skillsInput.addEventListener('blur', () => { if (skillsInput.value.trim()) addSkill(skillsInput.value); });
+
+// ─── COLLECT DATA & SUBMIT ────────────────────────────────────────────────
+function collectData() {
+  // Personal
+  const personal = {
+    fullName: document.getElementById('fullName').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    city: document.getElementById('city').value.trim(),
+    linkedin: document.getElementById('linkedin').value.trim(),
+    jobTitle: document.getElementById('jobTitle').value.trim(),
+  };
+
+  // Target
+  const target = {
+    jobDescription: document.getElementById('jobDescription').value.trim(),
+    company: document.getElementById('company').value.trim(),
+    theme: document.getElementById('theme').value,
+  };
+
+  // Experience
+  const experiences = [];
+  document.querySelectorAll('#experienceRows .dynamic-row').forEach(row => {
+    const inputs = row.querySelectorAll('input, textarea');
+    experiences.push({
+      company: inputs[0]?.value.trim(),
+      role: inputs[1]?.value.trim(),
+      startDate: inputs[2]?.value.trim(),
+      endDate: inputs[3]?.value.trim(),
+      responsibilities: inputs[4]?.value.trim(),
+    });
+  });
+
+  // Education
+  const education = [];
+  document.querySelectorAll('#educationRows .dynamic-row').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    education.push({
+      institution: inputs[0]?.value.trim(),
+      degree: inputs[1]?.value.trim(),
+      year: inputs[2]?.value.trim(),
+      grade: inputs[3]?.value.trim(),
+    });
+  });
+
+  // Skills
+  const skills = [...document.querySelectorAll('.skill-tag')].map(t => t.dataset.skill);
+
+  return { ...personal, ...target, experiences, education, skills };
+}
+
+function validate(data) {
+  const required = ['fullName', 'email', 'phone', 'city', 'jobDescription', 'company', 'theme'];
+  for (const key of required) {
+    if (!data[key]) {
+      alert(`Please fill in the required field: ${key.replace(/([A-Z])/g, ' $1')}`);
+      return false;
+    }
+  }
+  const hasFile = document.getElementById('resumeFile').files.length > 0;
+  const hasDetails = data.experiences.length > 0 || data.education.length > 0 || data.skills.length > 0;
+  if (!hasFile && !hasDetails) {
+    alert('Please either upload your old resume OR fill in at least one section (Work Experience, Education, or Skills).');
+    return false;
+  }
+  return true;
+}
+
+async function submitForm() {
+  const data = collectData();
+  if (!validate(data)) return;
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path stroke-linecap="round" stroke-linejoin="round" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16 8 8 0 010-16"/></svg> Building your resume…`;
+
+  try {
+    // Build form data (supports file upload)
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(data));
+    const fileInput = document.getElementById('resumeFile');
+    if (fileInput.files[0]) formData.append('resume', fileInput.files[0]);
+
+    await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
+
+    // Show success
+    document.getElementById('formWrap').style.display = 'none';
+    document.getElementById('successCard').classList.add('show');
+    document.getElementById('progressBar').style.display = 'none';
+  } catch (err) {
+    alert('Something went wrong. Please try again or contact support.');
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Build My Resume — Free`;
+  }
+}
+
+// Spin animation for loading
+const style = document.createElement('style');
+style.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+document.head.appendChild(style);
+</script>
+</body>
+</html>
