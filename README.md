@@ -19,7 +19,7 @@ No sign-up. No credit card. Just results.
 | Tool | Status |
 |------|--------|
 | ⚡ AI Resume Optimizer | ✅ Live |
-| ✍️ Cover Letter Generator | 🔜 Coming Soon |
+| ✍️ Resume Builder AI | ✅ Live |
 | 💼 LinkedIn Profile Optimizer | 🔜 Coming Soon |
 | 🎯 Interview Prep AI | 🔜 Coming Soon |
 | 📊 ATS Score Checker | 🔜 Coming Soon |
